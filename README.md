@@ -1,5 +1,7 @@
 # Pokemon Battle Lens
 
+[한국어](README.ko.md) | [日本語](README.ja.md)
+
 Pokemon Battle Lens is a screen-capture based Pokemon battle assistant. It reads the game screen with OCR, detects the opponent Pokemon and your four moves, then shows type effectiveness, move category, ability warnings, and rough speed estimates.
 
 This is an unofficial fan-made tool. Pokemon names, move data, and sprites are generated from PokeAPI data.
