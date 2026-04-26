@@ -1830,6 +1830,12 @@ class OcrEngine:
         candidates: List[Tuple[str, int]] = []
         segmented = self._segmented_digits_from_image(images[0]) if images else ""
         if segmented:
+            try:
+                value = int(segmented)
+                if 1 <= value <= 100:
+                    return str(value)
+            except ValueError:
+                pass
             candidates.append((segmented, 30))
         for img in images:
             for psm in psm_values:
