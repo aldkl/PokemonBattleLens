@@ -1833,10 +1833,15 @@ class OcrEngine:
             try:
                 value = int(segmented)
                 if 1 <= value <= 100:
-                    return str(value)
+                    # A small left-side artifact in the level ROI is often
+                    # classified as a leading 8, turning level 4/5 into 84/85.
+                    if len(segmented) == 2 and segmented.startswith("8") and segmented[1] != "0":
+                        candidates.append((segmented[1], 45))
+                        candidates.append((segmented, 10))
+                    else:
+                        return str(value)
             except ValueError:
                 pass
-            candidates.append((segmented, 30))
         for img in images:
             for psm in psm_values:
                 try:
