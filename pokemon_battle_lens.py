@@ -1935,6 +1935,8 @@ class PokemonBattleLens(tk.Tk):
         self.current_detection = DetectionResult()
         self.last_move_matches: List[Optional[str]] = [None, None, None, None]
         self.last_level_text = ""
+        self.not_battle_frames = 0
+        self.battle_pause_logged = False
         self.settings_window: Optional[tk.Toplevel] = None
         self.logo_image: Optional[tk.PhotoImage] = None
         self.app_icon_image: Optional[tk.PhotoImage] = None
@@ -3173,6 +3175,23 @@ class PokemonBattleLens(tk.Tk):
                         moves_list.append(text)
                         move_matches.append(accepted)
                         self.log(f"OCR 기술{idx + 1}: variants={variants[:3]} match={match} score={score:.2f} accepted={accepted}")
+
+                    move_text_count = sum(1 for item in moves_list if normalize_name(item))
+                    accepted_move_count = sum(1 for item in move_matches if item)
+                    if move_text_count == 0 and accepted_move_count == 0:
+                        self.not_battle_frames += 1
+                    else:
+                        if self.battle_pause_logged:
+                            self.log("Battle UI detected again; OCR resume")
+                        self.not_battle_frames = 0
+                        self.battle_pause_logged = False
+
+                    if self.not_battle_frames >= 4:
+                        if not self.battle_pause_logged:
+                            self.log("Move UI not detected; waiting for battle screen")
+                            self.battle_pause_logged = True
+                        self.status_var.set("전투 대기 중")
+                        continue
 
                     result = self._build_detection(opponent, level_status, tuple(moves_list), opponent_match, tuple(move_matches))
                     self.queue.put(result)
