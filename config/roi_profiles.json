@@ -1,0 +1,29 @@
+{
+  "description": "Example ROI profiles. Coordinates are relative to the captured monitor or selected game window.",
+  "profiles": {
+    "switch_1080p_docked_example": {
+      "opponent_name": {"x": 980, "y": 70, "w": 280, "h": 80},
+      "opponent_level_status": {"x": 1140, "y": 130, "w": 220, "h": 60},
+      "move_1": {"x": 820, "y": 690, "w": 260, "h": 70},
+      "move_2": {"x": 1090, "y": 690, "w": 260, "h": 70},
+      "move_3": {"x": 820, "y": 765, "w": 260, "h": 70},
+      "move_4": {"x": 1090, "y": 765, "w": 260, "h": 70}
+    },
+    "gba_emulator_3x_example": {
+      "opponent_name": {"x": 310, "y": 45, "w": 165, "h": 35},
+      "opponent_level_status": {"x": 430, "y": 76, "w": 90, "h": 28},
+      "move_1": {"x": 260, "y": 390, "w": 145, "h": 36},
+      "move_2": {"x": 410, "y": 390, "w": 145, "h": 36},
+      "move_3": {"x": 260, "y": 430, "w": 145, "h": 36},
+      "move_4": {"x": 410, "y": 430, "w": 145, "h": 36}
+    },
+    "ds_dual_screen_2x_example": {
+      "opponent_name": {"x": 420, "y": 70, "w": 190, "h": 45},
+      "opponent_level_status": {"x": 560, "y": 105, "w": 120, "h": 35},
+      "move_1": {"x": 340, "y": 720, "w": 175, "h": 48},
+      "move_2": {"x": 520, "y": 720, "w": 175, "h": 48},
+      "move_3": {"x": 340, "y": 774, "w": 175, "h": 48},
+      "move_4": {"x": 520, "y": 774, "w": 175, "h": 48}
+    }
+  }
+}

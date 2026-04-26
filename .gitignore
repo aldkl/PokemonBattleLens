@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Build outputs
+build/
+dist/
+*.spec
+*.exe
+*.pkg
+
+# Local app state
+config/user_settings.json
+config/settings_snapshot.json
+config/visual_samples.json
+
+# Local OCR language data
+tessdata/
+
+# Data fetch cache
+.cache/
+
+# Logs / temp
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
