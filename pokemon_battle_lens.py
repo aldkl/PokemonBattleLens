@@ -84,7 +84,13 @@ USER_SETTINGS_PATH = os.path.join(APP_ROOT, "config", "user_settings.json")
 SETTINGS_SNAPSHOT_PATH = os.path.join(APP_ROOT, "config", "settings_snapshot.json")
 OCR_ALIASES_PATH = os.path.join(APP_ROOT, "config", "ocr_aliases.json")
 VISUAL_SAMPLES_PATH = os.path.join(APP_ROOT, "config", "visual_samples.json")
-TESSDATA_DIR = os.path.join(BASE_DIR, "tessdata")
+LOCAL_TESSDATA_DIR = os.path.join(APP_ROOT, "tessdata")
+BUNDLED_TESSDATA_DIR = os.path.join(BASE_DIR, "tessdata")
+SYSTEM_TESSDATA_DIRS = (
+    os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Tesseract-OCR", "tessdata"),
+    os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "Tesseract-OCR", "tessdata"),
+)
+TESSDATA_DIR = LOCAL_TESSDATA_DIR
 TESSERACT_CANDIDATES = [
     os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Tesseract-OCR", "tesseract.exe"),
     os.path.join(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"), "Tesseract-OCR", "tesseract.exe"),
@@ -1002,10 +1008,46 @@ def configure_tesseract() -> Optional[str]:
     for path in TESSERACT_CANDIDATES:
         if os.path.exists(path):
             pytesseract.pytesseract.tesseract_cmd = path
-            if os.path.isdir(TESSDATA_DIR):
-                os.environ["TESSDATA_PREFIX"] = TESSDATA_DIR
+            tessdata_dir = find_tessdata_dir()
+            if tessdata_dir:
+                os.environ["TESSDATA_PREFIX"] = tessdata_dir
             return path
     return None
+
+
+def tessdata_dirs() -> List[str]:
+    seen = set()
+    dirs: List[str] = []
+    for path in (LOCAL_TESSDATA_DIR, BUNDLED_TESSDATA_DIR, *SYSTEM_TESSDATA_DIRS):
+        normalized = os.path.normcase(os.path.abspath(path))
+        if normalized not in seen:
+            seen.add(normalized)
+            dirs.append(path)
+    return dirs
+
+
+def find_tessdata_dir() -> Optional[str]:
+    for path in tessdata_dirs():
+        if os.path.isdir(path) and any(name.endswith(".traineddata") for name in os.listdir(path)):
+            return path
+    return None
+
+
+def available_tesseract_languages() -> set:
+    languages = set()
+    for path in tessdata_dirs():
+        if not os.path.isdir(path):
+            continue
+        for name in os.listdir(path):
+            if name.endswith(".traineddata"):
+                languages.add(os.path.splitext(name)[0])
+    return languages
+
+
+def missing_tesseract_languages(lang: str) -> List[str]:
+    available = available_tesseract_languages()
+    requested = [part.strip() for part in lang.split("+") if part.strip()]
+    return [part for part in requested if part not in available]
 
 
 def get_generation_key(gen: int) -> str:
@@ -2187,8 +2229,11 @@ class PokemonBattleLens(tk.Tk):
             self.log("설치: pip install mss opencv-python pillow pytesseract pygetwindow")
         if self.tesseract_path:
             self.log(f"Tesseract OCR: {self.tesseract_path}")
-            if os.path.isdir(TESSDATA_DIR):
-                langs = ", ".join(sorted(os.path.splitext(name)[0] for name in os.listdir(TESSDATA_DIR) if name.endswith(".traineddata")))
+            tessdata_dir = find_tessdata_dir()
+            if tessdata_dir:
+                self.log(f"Tesseract tessdata: {tessdata_dir}")
+            langs = ", ".join(sorted(available_tesseract_languages()))
+            if langs:
                 self.log(f"Tesseract languages: {langs}")
         else:
             self.log("Tesseract OCR 엔진을 찾지 못했습니다.")
@@ -2527,11 +2572,27 @@ class PokemonBattleLens(tk.Tk):
             missing.append("mss")
         if np is None:
             missing.append("numpy")
+        if pytesseract is None or not self.tesseract_path:
+            missing.append("Tesseract OCR")
         if missing:
             msg = "화면 캡처 패키지가 없어 스캔을 시작할 수 없습니다: " + ", ".join(missing)
             self.status_var.set("스캔 실패: 캡처 패키지 없음")
             self.log(msg)
             messagebox.showerror(APP_NAME, msg + "\n\n설치:\npip install mss numpy")
+            return False
+        self.settings["ocr"]["lang"] = self.ocr_lang_var.get().strip() or self.settings["ocr"].get("lang", "kor")
+        missing_langs = missing_tesseract_languages(self.settings["ocr"]["lang"])
+        if missing_langs:
+            searched = "\n".join(tessdata_dirs())
+            msg = (
+                "Tesseract OCR language data is missing: "
+                + ", ".join(missing_langs)
+                + "\n\nPut .traineddata files in one of these folders:\n"
+                + searched
+            )
+            self.status_var.set("OCR language data missing")
+            self.log(msg.replace("\n", " / "))
+            messagebox.showerror(APP_NAME, msg)
             return False
         return True
 

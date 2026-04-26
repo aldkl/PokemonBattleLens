@@ -71,6 +71,10 @@ C:\Program Files (x86)\Tesseract-OCR\tesseract.exe
 C:\Program Files\Tesseract-OCR\tessdata
 ```
 
+`Program Files` に書き込む権限がない場合は、`pokemon_battle_lens.py` または
+`PokemonBattleLens.exe` の隣に `tessdata/` フォルダーを作成し、`.traineddata`
+ファイルを入れてください。
+
 日本語/韓国語 OCR プリセットでは、初期設定で英語 OCR を混ぜないようにしています。ポケモンのゲームフォントで誤った英語認識が混ざる問題を減らすためです。
 
 ## 実行

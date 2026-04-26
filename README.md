@@ -71,6 +71,10 @@ Typical Windows path:
 C:\Program Files\Tesseract-OCR\tessdata
 ```
 
+If you do not have permission to write to `Program Files`, create a local
+`tessdata/` folder next to `pokemon_battle_lens.py` or `PokemonBattleLens.exe`
+and put the `.traineddata` files there.
+
 Korean and Japanese OCR presets intentionally do not mix English OCR by default. This reduces false matches on Pokemon game fonts.
 
 ## Run
