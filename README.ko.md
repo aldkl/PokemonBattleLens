@@ -4,7 +4,7 @@
 
 Pokemon Battle Lens는 화면 캡처 기반 포켓몬 배틀 보조 프로그램입니다. 게임 화면을 OCR로 읽어서 상대 포켓몬과 내 기술 4개를 판독하고, 타입 상성, 기술 분류, 특성 주의 문구, 대략적인 스피드 예상치를 표시합니다.
 
-이 프로젝트는 비공식 팬 제작 도구입니다. 포켓몬 이름, 기술 데이터, 스프라이트는 PokeAPI 데이터를 기반으로 생성됩니다.
+이 프로젝트는 비공식 팬 제작 도구입니다. 포켓몬 이름과 기술 데이터는 PokeAPI 데이터를 기반으로 생성됩니다. 포켓몬 스프라이트 이미지는 이 저장소에 포함하지 않으며, 필요할 때 사용자가 로컬에서 선택적으로 받을 수 있습니다.
 
 ## 주요 기능
 
@@ -125,7 +125,6 @@ config/settings_snapshot.json
 data/pokemon_ko.json
 data/pokemon_en.json
 data/pokemon_ja.json
-assets/sprites/
 ```
 
 JSON 데이터에는 아래 정보가 포함됩니다.
@@ -147,6 +146,14 @@ python scripts/fetch_pokeapi_data.py
 
 PokeAPI를 사용하므로 시간이 걸릴 수 있습니다.
 
+선택적 로컬 스프라이트는 아래 명령으로 받을 수 있습니다.
+
+```powershell
+python scripts/fetch_pokeapi_data.py --download-sprites
+```
+
+받은 스프라이트는 `assets/sprites/`에 저장되며 git에는 올라가지 않습니다.
+
 ## Windows EXE 빌드
 
 PyInstaller 설치:
@@ -158,7 +165,7 @@ pip install pyinstaller
 빌드:
 
 ```powershell
-python -m PyInstaller --noconsole --onefile --name PokemonBattleLens --icon assets\app_icon.ico --add-data "data;data" --add-data "assets;assets" pokemon_battle_lens.py
+python -m PyInstaller --noconsole --onefile --name PokemonBattleLens --icon assets\app_icon.ico --add-data "data;data" --add-data "assets\app_icon.ico;assets" --add-data "assets\app_icon_v2.png;assets" pokemon_battle_lens.py
 ```
 
 결과물:
@@ -172,17 +179,21 @@ dist/PokemonBattleLens.exe
 - EXE도 실행 PC에 Tesseract OCR이 설치되어 있어야 합니다.
 - 로컬 설정은 EXE 옆의 `config/` 폴더에 저장됩니다.
 - 생성된 EXE와 빌드 폴더는 git에 커밋하지 마세요.
+- 다운로드한 포켓몬 스프라이트는 원본 권리를 확인하기 전에는 EXE에 포함하거나 재배포하지 마세요.
 
 ## 저장소 구조
 
 ```text
 pokemon_battle_lens.py        메인 앱
 requirements.txt              Python 의존성
-assets/                       아이콘, UI 이미지, 포켓몬 스프라이트
+assets/                       앱 아이콘
+assets/sprites/               선택적 로컬 스프라이트, git 제외
 data/                         생성된 포켓몬/기술 JSON 데이터
 config/roi_profiles.json      예시 ROI 프로필
 config/ocr_aliases.json       선택적 OCR 보정 별칭
 scripts/fetch_pokeapi_data.py 데이터 생성 스크립트
+LICENSE                       앱 소스코드 MIT 라이선스
+NOTICE.md                     서드파티 고지와 IP 주의사항
 ```
 
 ## 알려진 한계
@@ -197,4 +208,4 @@ scripts/fetch_pokeapi_data.py 데이터 생성 스크립트
 
 이 프로젝트는 비공식 도구이며 Nintendo, Game Freak, Creatures, The Pokemon Company와 관련이 없습니다.
 
-포켓몬 데이터와 스프라이트는 PokeAPI 리소스를 기반으로 생성됩니다. 큰 패키지 형태로 재배포하기 전에는 PokeAPI와 원본 에셋의 라이선스를 확인하세요.
+포켓몬/기술 데이터는 PokeAPI 리소스를 기반으로 생성됩니다. 포켓몬 스프라이트 이미지는 이 저장소에 포함하지 않습니다. 큰 패키지 형태로 재배포하기 전에는 [NOTICE.md](NOTICE.md), PokeAPI, 원본 에셋의 라이선스를 확인하세요.

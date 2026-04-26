@@ -4,7 +4,7 @@
 
 Pokemon Battle Lens は、画面キャプチャを利用するポケモンバトル支援ツールです。ゲーム画面を OCR で読み取り、相手のポケモンと自分の技 4 つを検出して、タイプ相性、技分類、特性に関する注意、素早さの概算を表示します。
 
-このプロジェクトは非公式のファンメイドツールです。ポケモン名、技データ、スプライトは PokeAPI のデータから生成されています。
+このプロジェクトは非公式のファンメイドツールです。ポケモン名と技データは PokeAPI のデータから生成されています。ポケモンのスプライト画像はこのリポジトリには含めておらず、必要な場合はユーザーがローカルで任意にダウンロードできます。
 
 ## 機能
 
@@ -125,7 +125,6 @@ config/settings_snapshot.json
 data/pokemon_ko.json
 data/pokemon_en.json
 data/pokemon_ja.json
-assets/sprites/
 ```
 
 JSON データには以下が含まれます。
@@ -147,6 +146,14 @@ python scripts/fetch_pokeapi_data.py
 
 PokeAPI を使用するため、時間がかかる場合があります。
 
+任意のローカルスプライトは以下のコマンドでダウンロードできます。
+
+```powershell
+python scripts/fetch_pokeapi_data.py --download-sprites
+```
+
+ダウンロードされたスプライトは `assets/sprites/` に保存され、git では無視されます。
+
 ## Windows EXE ビルド
 
 PyInstaller をインストールします。
@@ -158,7 +165,7 @@ pip install pyinstaller
 ビルド:
 
 ```powershell
-python -m PyInstaller --noconsole --onefile --name PokemonBattleLens --icon assets\app_icon.ico --add-data "data;data" --add-data "assets;assets" pokemon_battle_lens.py
+python -m PyInstaller --noconsole --onefile --name PokemonBattleLens --icon assets\app_icon.ico --add-data "data;data" --add-data "assets\app_icon.ico;assets" --add-data "assets\app_icon_v2.png;assets" pokemon_battle_lens.py
 ```
 
 出力:
@@ -172,17 +179,21 @@ dist/PokemonBattleLens.exe
 - EXE でも、実行する PC に Tesseract OCR がインストールされている必要があります。
 - ローカル設定は EXE の隣の `config/` フォルダーに保存されます。
 - 生成された EXE やビルドフォルダーは git にコミットしないでください。
+- ダウンロードしたポケモンスプライトは、元の権利を確認するまで EXE に含めたり再配布したりしないでください。
 
 ## リポジトリ構成
 
 ```text
 pokemon_battle_lens.py        メインアプリ
 requirements.txt              Python 依存関係
-assets/                       アイコン、UI 画像、ポケモンスプライト
+assets/                       アプリアイコン
+assets/sprites/               任意のローカルスプライト、git 対象外
 data/                         生成されたポケモン/技 JSON データ
 config/roi_profiles.json      サンプル ROI プロファイル
 config/ocr_aliases.json       任意の OCR 補正エイリアス
 scripts/fetch_pokeapi_data.py データ生成スクリプト
+LICENSE                       アプリのソースコードの MIT ライセンス
+NOTICE.md                     サードパーティ通知と IP 注意事項
 ```
 
 ## 既知の制限
@@ -197,4 +208,4 @@ scripts/fetch_pokeapi_data.py データ生成スクリプト
 
 このプロジェクトは非公式であり、Nintendo、Game Freak、Creatures、The Pokemon Company とは関係ありません。
 
-ポケモンデータとスプライトは PokeAPI リソースから生成されています。大きなパッケージとして再配布する前に、PokeAPI と元アセットのライセンスを確認してください。
+ポケモン/技データは PokeAPI リソースから生成されています。ポケモンのスプライト画像はこのリポジトリには含まれていません。大きなパッケージとして再配布する前に、[NOTICE.md](NOTICE.md)、PokeAPI、元アセットのライセンスを確認してください。

@@ -1071,7 +1071,12 @@ def resolve_project_path(path: str) -> str:
         return path
     if os.path.isabs(path):
         return path
-    return os.path.join(BASE_DIR, path)
+    bundled_path = os.path.join(BASE_DIR, path)
+    if os.path.exists(bundled_path):
+        return bundled_path
+    # Frozen builds should also be able to use optional local files placed
+    # next to the EXE, such as git-ignored sprites downloaded by the user.
+    return os.path.join(APP_ROOT, path)
 
 
 def clamp_roi(roi: Dict[str, int], width: int, height: int) -> Dict[str, int]:

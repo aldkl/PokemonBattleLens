@@ -23,6 +23,9 @@ config/visual_samples.json
 # Local OCR language data
 tessdata/
 
+# Optional downloaded Pokemon sprites
+assets/sprites/
+
 # Data fetch cache
 .cache/
 

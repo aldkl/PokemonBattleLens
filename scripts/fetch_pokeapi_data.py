@@ -5,14 +5,17 @@ Outputs:
   data/pokemon_ko.json
   data/pokemon_en.json
   data/pokemon_ja.json
-  assets/sprites/0001.png ...
 
 Run:
   python scripts/fetch_pokeapi_data.py
+
+Optional local sprite download:
+  python scripts/fetch_pokeapi_data.py --download-sprites
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -47,8 +50,11 @@ GENERATION_NUMBER = {
 }
 
 
-def ensure_dirs() -> None:
-    for path in (DATA_DIR, SPRITE_DIR, CACHE_DIR):
+def ensure_dirs(download_sprites: bool = False) -> None:
+    paths = [DATA_DIR, CACHE_DIR]
+    if download_sprites:
+        paths.append(SPRITE_DIR)
+    for path in paths:
         os.makedirs(path, exist_ok=True)
 
 
@@ -175,7 +181,7 @@ def pokemon_type_entry(number: int, species: Dict[str, Any], pokemon: Dict[str, 
     return entry
 
 
-def build_pokemon_data() -> Dict[str, Dict[str, Any]]:
+def build_pokemon_data(download_sprites: bool = False) -> Dict[str, Dict[str, Any]]:
     species_index = fetch_json("pokemon-species?limit=2000")
     rows = species_index.get("results", [])
     output = {code: {} for code in LANGS}
@@ -185,8 +191,9 @@ def build_pokemon_data() -> Dict[str, Dict[str, Any]]:
         if number < 1:
             continue
         pokemon = fetch_json(f"pokemon/{number}")
-        sprite_url = pokemon.get("sprites", {}).get("front_default")
-        download_file(sprite_url, os.path.join(SPRITE_DIR, f"{number:04d}.png"))
+        if download_sprites:
+            sprite_url = pokemon.get("sprites", {}).get("front_default")
+            download_file(sprite_url, os.path.join(SPRITE_DIR, f"{number:04d}.png"))
         fallback = species.get("name", f"pokemon-{number}")
         for code, spec in LANGS.items():
             name = localized_name(species.get("names", []), spec["name_langs"], fallback)
@@ -235,9 +242,20 @@ def write_language_files(pokemon: Dict[str, Dict[str, Any]], moves: Dict[str, Di
         print(f"wrote {path}: {len(pokemon[code])} pokemon, {len(moves[code])} moves")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build Pokemon Battle Lens JSON data from PokeAPI.")
+    parser.add_argument(
+        "--download-sprites",
+        action="store_true",
+        help="Download Pokemon sprites into assets/sprites for local use. These files are ignored by git.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    ensure_dirs()
-    pokemon = build_pokemon_data()
+    args = parse_args()
+    ensure_dirs(args.download_sprites)
+    pokemon = build_pokemon_data(args.download_sprites)
     moves = build_move_data()
     write_language_files(pokemon, moves)
 
