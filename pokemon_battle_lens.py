@@ -272,8 +272,8 @@ UI_TEXT = {
         "generation": "세대",
         "speed_profile": "스피드 기준",
         "scan_interval": "캡처 주기(ms)",
-        "save_gen_profile": "현재 세대 ROI/OCR 저장",
-        "load_gen_profile": "현재 세대 불러오기",
+        "save_gen_profile": "\ud604\uc7ac \uac8c\uc784 ROI/OCR \uc800\uc7a5",
+        "load_gen_profile": "\ud604\uc7ac \uac8c\uc784 \ubd88\ub7ec\uc624\uae30",
         "capture": "캡처",
         "capture_help": "모니터 또는 실행 중인 게임/에뮬레이터 창을 선택하세요.",
         "capture_target": "캡처 대상",
@@ -328,10 +328,11 @@ UI_TEXT = {
         "general": "General",
         "system_language": "System Language",
         "generation": "Generation",
+        "game_profile": "Game/UI Profile",
         "speed_profile": "Speed Profile",
         "scan_interval": "Capture Interval (ms)",
-        "save_gen_profile": "Save Gen ROI/OCR",
-        "load_gen_profile": "Load Current Gen",
+        "save_gen_profile": "Save Game ROI/OCR",
+        "load_gen_profile": "Load Current Game",
         "capture": "Capture",
         "capture_help": "Select a monitor or running game/emulator window.",
         "capture_target": "Capture Target",
@@ -388,8 +389,8 @@ UI_TEXT = {
         "generation": "世代",
         "speed_profile": "素早さ基準",
         "scan_interval": "キャプチャ間隔(ms)",
-        "save_gen_profile": "現世代 ROI/OCR 保存",
-        "load_gen_profile": "現世代を読込",
+        "save_gen_profile": "\u73fe\u5728\u306e\u30b2\u30fc\u30e0ROI/OCR\u4fdd\u5b58",
+        "load_gen_profile": "\u73fe\u5728\u306e\u30b2\u30fc\u30e0\u8aad\u307f\u8fbc\u307f",
         "capture": "キャプチャ",
         "capture_help": "モニターまたは実行中のゲーム/エミュレーターを選択してください。",
         "capture_target": "キャプチャ対象",
@@ -655,6 +656,7 @@ DATA: Dict[str, Any] = {
 
 DEFAULT_SETTINGS = {
     "generation": 9,
+    "game_profile": "gen9_sv",
     "capture": {"source": "monitor", "monitor_index": 1, "window_title": ""},
     "scan_interval_ms": SCAN_INTERVAL_MS,
     "speed_profile": "npc_basic",
@@ -675,6 +677,51 @@ DEFAULT_SETTINGS = {
         "move_4": {"x": 1090, "y": 765, "w": 260, "h": 70},
     },
 }
+
+
+GAME_UI_PROFILES: Tuple[Tuple[str, str, int], ...] = (
+    ("gen1_rby", "Gen 1 - R/B/Y", 1),
+    ("gen2_gsc", "Gen 2 - G/S/C", 2),
+    ("gen3_rse", "Gen 3 - R/S/E", 3),
+    ("gen3_frlg", "Gen 3 - FR/LG", 3),
+    ("gen4_dppt", "Gen 4 - D/P/Pt", 4),
+    ("gen4_hgss", "Gen 4 - HG/SS", 4),
+    ("gen5_bw", "Gen 5 - B/W", 5),
+    ("gen5_b2w2", "Gen 5 - B2/W2", 5),
+    ("gen6_xy", "Gen 6 - X/Y", 6),
+    ("gen6_oras", "Gen 6 - OR/AS", 6),
+    ("gen7_sm", "Gen 7 - S/M", 7),
+    ("gen7_usum", "Gen 7 - US/UM", 7),
+    ("gen8_swsh", "Gen 8 - Sw/Sh", 8),
+    ("gen8_bdsp", "Gen 8 - BD/SP", 8),
+    ("gen8_pla", "Gen 8 - Legends: Arceus", 8),
+    ("gen9_sv", "Gen 9 - S/V", 9),
+)
+GAME_UI_PROFILE_BY_KEY = {key: {"label": label, "generation": generation} for key, label, generation in GAME_UI_PROFILES}
+GAME_UI_PROFILE_KEY_BY_LABEL = {label: key for key, label, _generation in GAME_UI_PROFILES}
+
+
+def default_game_profile_for_generation(generation: int) -> str:
+    for key, _label, profile_generation in GAME_UI_PROFILES:
+        if profile_generation == generation:
+            return key
+    return "gen9_sv"
+
+
+def game_profile_label(profile_key: str) -> str:
+    return GAME_UI_PROFILE_BY_KEY.get(profile_key, GAME_UI_PROFILE_BY_KEY["gen9_sv"])["label"]
+
+
+def game_profile_values() -> List[str]:
+    return [label for _key, label, _generation in GAME_UI_PROFILES]
+
+
+def game_profile_key_from_label(label: str) -> str:
+    return GAME_UI_PROFILE_KEY_BY_LABEL.get(label, "gen9_sv")
+
+
+def game_profile_generation(profile_key: str) -> int:
+    return int(GAME_UI_PROFILE_BY_KEY.get(profile_key, GAME_UI_PROFILE_BY_KEY["gen9_sv"])["generation"])
 
 
 @dataclass
@@ -917,6 +964,8 @@ def save_user_settings(settings: Dict[str, Any], language_label: str = "") -> No
         payload = {"settings": settings, "language_label": language_label}
         if "roi_by_source" in existing:
             payload["roi_by_source"] = existing["roi_by_source"]
+        if "profiles_by_game" in existing:
+            payload["profiles_by_game"] = existing["profiles_by_game"]
         if "profiles_by_generation" in existing:
             payload["profiles_by_generation"] = existing["profiles_by_generation"]
         with open(USER_SETTINGS_PATH, "w", encoding="utf-8") as f:
@@ -1945,10 +1994,18 @@ class PokemonBattleLens(tk.Tk):
 
         self.gen_var = tk.IntVar(value=int(self.settings.get("generation", 9)))
         self.active_generation = int(self.gen_var.get())
+        saved_game_profile = str(self.settings.get("game_profile") or default_game_profile_for_generation(self.active_generation))
+        if saved_game_profile not in GAME_UI_PROFILE_BY_KEY:
+            saved_game_profile = default_game_profile_for_generation(self.active_generation)
+        self.settings["game_profile"] = saved_game_profile
+        self.active_game_profile = saved_game_profile
+        game_profiles = self.user_settings.get("profiles_by_game", {})
         gen_profiles = self.user_settings.get("profiles_by_generation", {})
-        if str(self.active_generation) in gen_profiles:
-            apply_generation_profile_to_settings(self.settings, gen_profiles[str(self.active_generation)])
+        profile = game_profiles.get(saved_game_profile) or gen_profiles.get(str(self.active_generation))
+        if profile:
+            apply_generation_profile_to_settings(self.settings, profile)
         self.always_top_var = tk.BooleanVar(value=True)
+        self.game_profile_var = tk.StringVar(value=game_profile_label(saved_game_profile))
         self.source_var = tk.StringVar(value=start_source)
         self.source_display_var = tk.StringVar(value=display_source(self.source_var.get()))
         self.ocr_lang_var = tk.StringVar(value=self.settings["ocr"].get("lang", "kor"))
@@ -1973,7 +2030,9 @@ class PokemonBattleLens(tk.Tk):
         self._build_ui()
         self._apply_window_icon()
         self.attributes("-topmost", True)
+        self._updating_profile_vars = False
         self.gen_var.trace_add("write", lambda *_: self._on_generation_changed())
+        self.game_profile_var.trace_add("write", lambda *_: self._on_game_profile_changed())
         self.after(200, self._poll_queue)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self._initial_log()
@@ -1983,7 +2042,7 @@ class PokemonBattleLens(tk.Tk):
             getattr(self, "system_language_var", tk.StringVar(value=SYSTEM_LANGUAGES["ko"])).get(),
             self.settings.get("system_language", "ko") if hasattr(self, "settings") else "ko",
         )
-        return UI_TEXT.get(code, UI_TEXT["ko"]).get(key, UI_TEXT["ko"].get(key, key))
+        return UI_TEXT.get(code, UI_TEXT["ko"]).get(key, UI_TEXT["en"].get(key, UI_TEXT["ko"].get(key, key)))
 
     def _system_language_code(self) -> str:
         return {label: code for code, label in SYSTEM_LANGUAGES.items()}.get(self.system_language_var.get(), "ko")
@@ -2257,6 +2316,7 @@ class PokemonBattleLens(tk.Tk):
             return
         self.footer_var.set(
             f"{self.tr('footer_generation')}: {self.gen_var.get()}    "
+            f"{self.tr('game_profile')}: {self.game_profile_var.get()}    "
             f"{self.tr('footer_data')}: {language_display(self.language_var.get())}    "
             f"{self.tr('footer_ocr')}: {self.ocr_preset_var.get()}"
         )
@@ -2281,23 +2341,29 @@ class PokemonBattleLens(tk.Tk):
         self.ocr_sat_max_var.set(int(ocr.get("white_max_saturation", DEFAULT_SETTINGS["ocr"]["white_max_saturation"])))
         self.ocr_delta_var.set(int(ocr.get("white_channel_delta", DEFAULT_SETTINGS["ocr"]["white_channel_delta"])))
 
-    def _save_generation_profile(self, generation: Optional[int] = None) -> None:
+    def _save_game_profile(self, profile_key: Optional[str] = None) -> None:
         self._sync_ocr_filter_settings()
-        gen = str(generation if generation is not None else int(self.gen_var.get()))
-        profiles = self.user_settings.setdefault("profiles_by_generation", {})
-        profiles[gen] = generation_profile_from_settings(self.settings)
+        key = profile_key or game_profile_key_from_label(self.game_profile_var.get())
+        profiles = self.user_settings.setdefault("profiles_by_game", {})
+        profiles[key] = generation_profile_from_settings(self.settings)
 
-    def _load_generation_profile(self, generation: int) -> bool:
-        profile = self.user_settings.get("profiles_by_generation", {}).get(str(generation))
+    def _load_game_profile(self, profile_key: str) -> bool:
+        generation = game_profile_generation(profile_key)
+        profile = self.user_settings.get("profiles_by_game", {}).get(profile_key)
+        if not profile:
+            profile = self.user_settings.get("profiles_by_generation", {}).get(str(generation))
         if not profile:
             return False
         apply_generation_profile_to_settings(self.settings, profile)
         self._sync_ocr_vars_from_settings()
         self._load_roi_to_vars()
-        self.log(f"{generation}세대 ROI/OCR 전처리 설정 불러옴")
+        self.log(f"{game_profile_label(profile_key)} ROI/OCR profile loaded")
         return True
 
     def _on_generation_changed(self) -> None:
+        if getattr(self, "_updating_profile_vars", False):
+            self._update_footer()
+            return
         try:
             new_generation = int(self.gen_var.get())
         except Exception:
@@ -2305,37 +2371,67 @@ class PokemonBattleLens(tk.Tk):
         if new_generation == getattr(self, "active_generation", new_generation):
             self._update_footer()
             return
-        self._save_generation_profile(self.active_generation)
+        self._save_game_profile(self.active_game_profile)
         self.active_generation = new_generation
-        loaded = self._load_generation_profile(new_generation)
+        next_profile = default_game_profile_for_generation(new_generation)
+        self.active_game_profile = next_profile
+        self.settings["game_profile"] = next_profile
+        self._updating_profile_vars = True
+        self.game_profile_var.set(game_profile_label(next_profile))
+        self._updating_profile_vars = False
+        loaded = self._load_game_profile(next_profile)
         if not loaded:
-            self.log(f"{new_generation}세대 저장 프로필 없음: 현재 ROI/OCR 설정 유지")
+            self.log(f"{game_profile_label(next_profile)} saved ROI/OCR profile not found; keeping current settings")
         self.settings["generation"] = new_generation
         self._refresh_effects()
         self._update_footer()
 
+    def _on_game_profile_changed(self) -> None:
+        if getattr(self, "_updating_profile_vars", False):
+            self._update_footer()
+            return
+        new_profile = game_profile_key_from_label(self.game_profile_var.get())
+        if new_profile == getattr(self, "active_game_profile", new_profile):
+            self._update_footer()
+            return
+        self._save_game_profile(self.active_game_profile)
+        self.active_game_profile = new_profile
+        new_generation = game_profile_generation(new_profile)
+        self.settings["game_profile"] = new_profile
+        self.settings["generation"] = new_generation
+        self.active_generation = new_generation
+        self._updating_profile_vars = True
+        self.gen_var.set(new_generation)
+        self._updating_profile_vars = False
+        loaded = self._load_game_profile(new_profile)
+        if not loaded:
+            self.log(f"{game_profile_label(new_profile)} saved ROI/OCR profile not found; keeping current settings")
+        self._refresh_effects()
+        self._update_footer()
+
     def _save_current_generation_profile_ui(self) -> None:
-        self._save_generation_profile(int(self.gen_var.get()))
+        self._save_game_profile(game_profile_key_from_label(self.game_profile_var.get()))
         self._persist_settings()
-        self.log(f"{self.gen_var.get()}세대 ROI/OCR 전처리 설정 저장")
+        self.log(f"{self.game_profile_var.get()} ROI/OCR profile saved")
 
     def _load_current_generation_profile_ui(self) -> None:
-        gen = int(self.gen_var.get())
-        if self._load_generation_profile(gen):
+        profile_key = game_profile_key_from_label(self.game_profile_var.get())
+        if self._load_game_profile(profile_key):
             self._refresh_effects()
             self._update_footer()
         else:
-            messagebox.showinfo(APP_NAME, f"{gen}세대에 저장된 ROI/OCR 설정이 없습니다.")
+            messagebox.showinfo(APP_NAME, f"No saved ROI/OCR profile for {self.game_profile_var.get()}.")
 
     def _persist_settings(self) -> None:
         self._apply_source_setting()
         self.settings["generation"] = int(self.gen_var.get())
+        self.settings["game_profile"] = game_profile_key_from_label(self.game_profile_var.get())
         self.settings["scan_interval_ms"] = max(100, int(self.scan_interval_var.get()))
         self.settings["speed_profile"] = speed_profile_key_from_label(self.speed_profile_var.get())
         self.settings["ocr"]["lang"] = self.ocr_lang_var.get()
         self.settings["system_language"] = self._system_language_code()
         self._sync_ocr_filter_settings()
-        self._save_generation_profile(int(self.gen_var.get()))
+        self._save_game_profile(self.settings["game_profile"])
         roi_by_source = self.user_settings.get("roi_by_source", {})
         roi_by_source[self.source_var.get()] = deep_copy(self.settings["roi"])
         self.user_settings["roi_by_source"] = roi_by_source
@@ -2344,6 +2440,7 @@ class PokemonBattleLens(tk.Tk):
             with open(USER_SETTINGS_PATH, "r", encoding="utf-8") as f:
                 payload = json.load(f)
             payload["roi_by_source"] = roi_by_source
+            payload["profiles_by_game"] = self.user_settings.get("profiles_by_game", {})
             payload["profiles_by_generation"] = self.user_settings.get("profiles_by_generation", {})
             with open(USER_SETTINGS_PATH, "w", encoding="utf-8") as f:
                 json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -2445,10 +2542,12 @@ class PokemonBattleLens(tk.Tk):
         ttk.Combobox(general, textvariable=self.gen_var, values=list(range(1, 10)), width=8, state="readonly").grid(row=2, column=1, sticky="ew", pady=(8, 0))
         ttk.Label(general, text=self.tr("speed_profile"), style="Panel.TLabel").grid(row=2, column=2, sticky="e", padx=(12, 8), pady=(8, 0))
         ttk.Combobox(general, textvariable=self.speed_profile_var, values=speed_profile_values(self._system_language_code()), state="readonly").grid(row=2, column=3, sticky="ew", pady=(8, 0))
-        ttk.Label(general, text=self.tr("scan_interval"), style="Panel.TLabel").grid(row=3, column=0, sticky="w", padx=(0, 8), pady=(8, 0))
-        ttk.Spinbox(general, from_=100, to=5000, increment=100, textvariable=self.scan_interval_var, width=8).grid(row=3, column=1, sticky="ew", pady=(8, 0))
-        ttk.Button(general, text=self.tr("save_gen_profile"), command=self._save_current_generation_profile_ui).grid(row=3, column=2, sticky="ew", padx=(12, 6), pady=(8, 0))
-        ttk.Button(general, text=self.tr("load_gen_profile"), command=self._load_current_generation_profile_ui).grid(row=3, column=3, sticky="ew", pady=(8, 0))
+        ttk.Label(general, text=self.tr("game_profile"), style="Panel.TLabel").grid(row=3, column=0, sticky="w", padx=(0, 8), pady=(8, 0))
+        ttk.Combobox(general, textvariable=self.game_profile_var, values=game_profile_values(), state="readonly").grid(row=3, column=1, columnspan=3, sticky="ew", pady=(8, 0))
+        ttk.Label(general, text=self.tr("scan_interval"), style="Panel.TLabel").grid(row=4, column=0, sticky="w", padx=(0, 8), pady=(8, 0))
+        ttk.Spinbox(general, from_=100, to=5000, increment=100, textvariable=self.scan_interval_var, width=8).grid(row=4, column=1, sticky="ew", pady=(8, 0))
+        ttk.Button(general, text=self.tr("save_gen_profile"), command=self._save_current_generation_profile_ui).grid(row=4, column=2, sticky="ew", padx=(12, 6), pady=(8, 0))
+        ttk.Button(general, text=self.tr("load_gen_profile"), command=self._load_current_generation_profile_ui).grid(row=4, column=3, sticky="ew", pady=(8, 0))
         """
         ttk.Label(general, text="세대", style="Panel.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 8))
         ttk.Combobox(general, textvariable=self.gen_var, values=list(range(1, 10)), width=8, state="readonly").grid(row=1, column=1, sticky="ew")
@@ -3364,6 +3463,16 @@ class PokemonBattleLens(tk.Tk):
                 self.data = payload["data"]
             if "settings" in payload:
                 self.settings.update(payload["settings"])
+                loaded_generation = int(self.settings.get("generation", self.gen_var.get()))
+                loaded_profile = str(self.settings.get("game_profile") or default_game_profile_for_generation(loaded_generation))
+                if loaded_profile not in GAME_UI_PROFILE_BY_KEY:
+                    loaded_profile = default_game_profile_for_generation(loaded_generation)
+                self.active_generation = loaded_generation
+                self.active_game_profile = loaded_profile
+                self._updating_profile_vars = True
+                self.gen_var.set(loaded_generation)
+                self.game_profile_var.set(game_profile_label(loaded_profile))
+                self._updating_profile_vars = False
                 self.scan_interval_var.set(int(self.settings.get("scan_interval_ms", SCAN_INTERVAL_MS)))
                 speed_profile = self.settings.get("speed_profile", "npc_basic")
                 self.speed_profile_var.set(speed_profile_label(speed_profile, self._system_language_code()))

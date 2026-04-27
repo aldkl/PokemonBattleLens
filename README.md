@@ -95,7 +95,7 @@ PokemonBattleLens.exe
 2. Run `python pokemon_battle_lens.py`.
 3. Open `Settings`.
 4. Select the capture target: monitor or game/emulator window.
-5. Select generation and game screen language.
+5. Select generation, game/UI profile, and game screen language.
 6. Open `ROI Preview`.
 7. Adjust ROI boxes until opponent name, level, and all four moves are covered.
 8. Start scanning.
@@ -106,7 +106,7 @@ OCR means reading text from a captured image.
 
 ROI means the rectangular screen region passed into OCR.
 
-Different games, emulators, scaling settings, and layouts need different ROI coordinates. The app stores ROI and OCR preprocessing settings per generation. Use the settings snapshot feature before experimenting.
+Different games, emulators, scaling settings, and layouts need different ROI coordinates. The app stores ROI and OCR preprocessing settings per game/UI profile, with older per-generation settings kept as a fallback. Use the settings snapshot feature before experimenting.
 
 ## Settings Snapshot
 
